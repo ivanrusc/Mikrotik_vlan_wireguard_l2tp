@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="ca">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Fase 2 · MikroTik VPN</title>
+<style>
+:root{--bg:#f6f8fa;--panel:#fff;--border:#d0d7de;--text:#1f2328;--muted:#59636e;--blue:#0969da;--green:#1a7f37;--amber:#9a6700;--code:#0d1117;--codeText:#e6edf3}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+header{background:#24292f;color:#fff;padding:16px 22px;position:sticky;top:0;z-index:10}header .in{max-width:1150px;margin:auto;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+header a{color:#fff;text-decoration:none;border:1px solid #57606a;border-radius:6px;padding:6px 10px;font-weight:600}main{max-width:1050px;margin:24px auto;padding:0 18px}
+section{background:#fff;border:1px solid var(--border);border-radius:10px;padding:22px;margin-bottom:18px}.hero{background:linear-gradient(135deg,#fff,#eef6ff)}
+h1{margin:0 0 6px;font-size:29px;line-height:1.2}h2{margin:0 0 13px;font-size:21px;border-bottom:1px solid var(--border);padding-bottom:8px}h3{font-size:17px;margin:20px 0 8px}
+p{margin:8px 0 12px}.muted{color:var(--muted)}table{width:100%;border-collapse:collapse;display:block;overflow:auto}th,td{border:1px solid var(--border);padding:8px 10px;text-align:left}th{background:#f6f8fa}
+.note,.warn,.ok{padding:12px 14px;border-left:4px solid;border-radius:6px;margin:14px 0}.note{border-color:var(--blue);background:#ddf4ff}.warn{border-color:var(--amber);background:#fff8c5}.ok{border-color:var(--green);background:#dafbe1}
+.code{background:var(--code);border:1px solid #30363d;border-radius:8px;overflow:hidden;margin:12px 0 18px}.bar{display:flex;justify-content:space-between;align-items:center;background:#161b22;border-bottom:1px solid #30363d;color:#8b949e;padding:7px 10px;font-size:12px}
+button{background:#21262d;color:#c9d1d9;border:1px solid #30363d;border-radius:6px;padding:5px 9px;cursor:pointer}pre{margin:0;padding:14px;overflow:auto;color:var(--codeText);font:13px/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;white-space:pre}
+.diagram{font:13px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:#f6f8fa;border:1px solid var(--border);border-radius:8px;padding:15px;overflow:auto}
+.links a{display:inline-block;margin:4px 8px 4px 0;padding:6px 9px;border:1px solid var(--border);border-radius:6px;background:#f6f8fa;text-decoration:none;color:var(--blue);font-weight:600}
+@media print{header,button{display:none}body{background:#fff}section{break-inside:avoid}}
+</style>
+</head>
+<body>
+<header><div class="in"><b>MikroTik · DIGI · VLAN · VPN</b><div><a href="../README.md">README</a></div></div></header>
+<main>
+<section class="hero"><h1>Fase 2 · L2TP/IPsec + WireGuard</h1><p class="muted">VPN multipunt i P2P/site-to-site</p></section>
+<section><h2>1. L2TP/IPsec multipunt</h2>
+<table><tr><th>Element</th><th>Valor</th></tr>
+<tr><td>Xarxa</td><td>192.168.140.0/24</td></tr>
+<tr><td>Router</td><td>192.168.140.1</td></tr>
+<tr><td>Pool</td><td>192.168.140.100–200</td></tr>
+<tr><td>IPsec</td><td>obligatori</td></tr>
+<tr><td>Autenticació PPP</td><td>MSCHAPv2</td></tr></table>
+<div class="warn"><b>Limitació RouterOS:</b> diversos clients L2TP/IPsec darrere de la mateixa NAT pública poden no funcionar amb el mode IPsec automàtic. En aquest cas, prefereix WireGuard.</div>
+<p>VPN → MGMT, Proxmox, CT/VM i Internet: permès. VPN → WiFi / VLAN reservades: denegat.</p>
+<div class="code"><div class="bar"><span>RouterOS</span><button class="copy">Copiar</button></div><pre><code>/import file-name=02-fase2-l2tp-ipsec.rsc</code></pre></div></section>
+
+<section><h2>2. Firewall L2TP/IPsec</h2>
+<ul><li>UDP 500 — IKE</li><li>UDP 4500 — NAT-T</li><li>ESP — IPsec</li><li>UDP 1701 — només amb <code>ipsec-policy=in,ipsec</code></li></ul></section>
+
+<section><h2>3. WireGuard P2P</h2>
+<table><tr><th>Element</th><th>Valor</th></tr>
+<tr><td>Interfície</td><td>WG-P2P</td></tr>
+<tr><td>Local</td><td>10.255.255.1/30</td></tr>
+<tr><td>Remot</td><td>10.255.255.2/30</td></tr>
+<tr><td>Port</td><td>UDP 13231</td></tr></table>
+<div class="note">La plantilla crea la interfície i les regles. El peer queda comentat fins tenir <b>CLAU_PUBLICA_REMOTA_BASE64</b> i <b>REMOTE_LAN_CIDR</b>.</div>
+<div class="code"><div class="bar"><span>RouterOS</span><button class="copy">Copiar</button></div><pre><code>/interface wireguard print detail\n/interface wireguard peers print detail\n/ping 10.255.255.2</code></pre></div></section>
+
+<section><h2>4. Política WireGuard</h2>
+<p>El remot pot accedir a MGMT, Proxmox i CT/VM. Les xarxes locals MGMT/Proxmox/CTVM poden iniciar cap al remot si existeix una ruta. WiFi i les VLAN reservades continuen bloquejades.</p></section>
+
+<section><h2>5. Fonts</h2><div class="links">
+<a target="_blank" href="https://help.mikrotik.com/docs/spaces/ROS/pages/11993097/IPsec">IPsec</a>
+<a target="_blank" href="https://help.mikrotik.com/docs/spaces/ROS/pages/2031631/L2TP">L2TP</a>
+<a target="_blank" href="https://help.mikrotik.com/docs/spaces/ROS/pages/69664792/WireGuard">WireGuard</a>
+<a target="_blank" href="https://help.mikrotik.com/docs/spaces/ROS/pages/132350049/PPP%20AAA">PPP AAA</a>
+</div></section></main>
+<script>
+document.querySelectorAll('button.copy').forEach(b=>b.onclick=async()=>{const t=b.closest('.code').querySelector('code').innerText;try{await navigator.clipboard.writeText(t)}catch(e){const x=document.createElement('textarea');x.value=t;document.body.appendChild(x);x.select();document.execCommand('copy');x.remove()}const o=b.textContent;b.textContent='Copiat ✓';setTimeout(()=>b.textContent=o,1200)})
+</script>
+</body></html>

@@ -1,0 +1,7 @@
+*.backup
+.env
+*.env
+secrets/
+private/
+.DS_Store
+*~
