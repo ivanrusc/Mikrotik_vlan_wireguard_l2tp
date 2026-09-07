@@ -71,14 +71,42 @@ VLAN135  Reservat  192.168.135.0/24</div>
 <p>DHCPv6-PD corre sobre <code>PPPoE-DIGI</code>. El prefix delegat es divideix en /64 i se n'assigna un a MGMT, WiFi, Proxmox i CT/VM. VLAN134/135 no anuncien IPv6 mentre siguin reservades.</p>
 <div class="ok"><b>Sense NAT66:</b> la protecció i segmentació IPv6 es fa amb firewall.</div></section>
 
-<section><h2>6. Importar</h2>
+
+<section><h2>6. Validació real IPv6</h2>
+<div class="ok"><b>Validat en RB750Gr3 amb RouterOS 7.20.7:</b> el client DHCPv6-PD queda <code>bound</code>, DIGI entrega un prefix delegat /56 i RouterOS crea <code>pool6-DIGI</code> amb <code>prefix-length=64</code>.</div>
+
+<h3>DHCPv6-PD compatible i provat</h3>
+<div class="code"><div class="bar"><span>RouterOS 7.20.7</span><button class="copy">Copiar</button></div><pre><code>/ipv6 dhcp-client
+add interface=PPPoE-DIGI request=prefix pool-name=pool6-DIGI pool-prefix-length=64 add-default-route=yes use-peer-dns=yes disabled=no comment="DIGI DHCPv6-PD"</code></pre></div>
+
+<div class="warn"><b>Nota de compatibilitat:</b> no s'utilitza <code>allow-reconfigure=yes</code>. El dispositiu provat amb RouterOS 7.20.7 va rebutjar aquest paràmetre al CLI. No és necessari per rebre i utilitzar el prefix delegat.</div>
+
+<h3>Consumir un /64 del prefix delegat</h3>
+<div class="code"><div class="bar"><span>RouterOS</span><button class="copy">Copiar</button></div><pre><code>/ipv6 address
+add address=::1/64 from-pool=pool6-DIGI interface=bridge-LAN advertise=yes comment="IPv6 MGMT"</code></pre></div>
+
+<p>En aquesta configuració avançada s'utilitza el mateix mecanisme per MGMT, WiFi, Proxmox i CT/VM. Cada interfície consumeix un /64 diferent del prefix delegat.</p>
+
+<h3>Comprovacions</h3>
+<div class="code"><div class="bar"><span>RouterOS</span><button class="copy">Copiar</button></div><pre><code>/ipv6 dhcp-client print detail
+/ipv6 pool print detail
+/ipv6 pool used print
+/ipv6 address print detail
+/ipv6 route print detail where dst-address="::/0"
+/ping 2606:4700:4700::1111 count=5
+/ping 2001:4860:4860::8888 count=5</code></pre></div>
+
+<p>Resultat validat: pings IPv6 a Cloudflare i Google amb <b>0% packet-loss</b>.</p>
+</section>
+
+<section><h2>7. Importar</h2>
 <div class="warn"><b>Abans:</b> substitueix <code>USUARI@digi</code> i <code>CONTRASENYA</code>. Recomanat Safe Mode.</div>
 <div class="code"><div class="bar"><span>RouterOS</span><button class="copy">Copiar</button></div><pre><code>/import file-name=01-fase1-digi-vlans-firewall.rsc</code></pre></div></section>
 
-<section><h2>7. Comprovacions</h2>
+<section><h2>8. Comprovacions</h2>
 <div class="code"><div class="bar"><span>RouterOS</span><button class="copy">Copiar</button></div><pre><code>/interface bridge vlan print\n/interface vlan print\n/interface pppoe-client print detail\n/ip dhcp-server lease print\n/ip firewall filter print stats\n/ipv6 dhcp-client print detail\n/ipv6 pool used print\n/ipv6 address print\n/ipv6 firewall filter print stats</code></pre></div></section>
 
-<section><h2>8. Fonts</h2><div class="links">
+<section><h2>9. Fonts</h2><div class="links">
 <a target="_blank" href="https://help.mikrotik.com/docs/spaces/ROS/pages/28606465/Bridge%20VLAN%20Table">Bridge VLAN Table</a>
 <a target="_blank" href="https://help.mikrotik.com/docs/spaces/ROS/pages/24805500/DHCP">DHCP / DHCPv6</a>
 <a target="_blank" href="https://help.mikrotik.com/docs/spaces/ROS/pages/40992815/IPv6%20Neighbor%20Discovery">IPv6 ND</a>

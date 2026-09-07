@@ -17,6 +17,9 @@
 # - NO executa reset-configuration.
 # - Substituir USUARI@digi i CONTRASENYA.
 # - Aplicar preferiblement amb WinBox Safe Mode.
+# - IPv6 validat en RB750Gr3 / RouterOS 7.20.7 el 2026-09-07.
+# - En l'equip provat, no habilitar allow-reconfigure al DHCPv6 client.
+# - DHCPv6-PD -> pool6-DIGI -> /64 per LAN/VLAN amb from-pool.
 # =============================================================================
 
 /system identity
@@ -185,7 +188,15 @@ add chain=forward action=drop comment="IPv4 FWD 999 - DROP FINAL"
 set disable-ipv6=no forward=yes accept-router-advertisements=no
 
 /ipv6 dhcp-client
-add interface=PPPoE-DIGI request=prefix pool-name=pool6-DIGI pool-prefix-length=64 add-default-route=yes use-peer-dns=yes allow-reconfigure=yes disabled=no comment="DIGI DHCPv6-PD"
+add interface=PPPoE-DIGI request=prefix pool-name=pool6-DIGI pool-prefix-length=64 add-default-route=yes use-peer-dns=yes disabled=no comment="DIGI DHCPv6-PD"
+
+# Validacio real:
+# /ipv6 dhcp-client print detail -> status=bound
+# DIGI va delegar un /56 en la prova real.
+# /ipv6 pool print detail -> pool6-DIGI amb prefix-length=64
+#
+# Les adreces /ipv6 address amb from-pool=pool6-DIGI consumeixen
+# un /64 independent per cada interfície LAN/VLAN.
 
 /ipv6 address
 add address=::1/64 from-pool=pool6-DIGI interface=bridge-LAN advertise=yes comment="IPv6 MGMT"

@@ -38,6 +38,38 @@ Repositori avançat i independent de la configuració bàsica anterior.
 
 DHCPv6 Prefix Delegation sobre `PPPoE-DIGI`, amb un `/64` per Management, WiFi, Proxmox i CT/VM. No s'utilitza NAT66.
 
+
+## Validació IPv6 — RouterOS 7.20.7
+
+Configuració validada en un **MikroTik RB750Gr3** amb **RouterOS 7.20.7**.
+
+DHCPv6-PD funcional:
+
+```routeros
+/ipv6 dhcp-client
+add interface=PPPoE-DIGI request=prefix pool-name=pool6-DIGI pool-prefix-length=64 add-default-route=yes use-peer-dns=yes disabled=no comment="DIGI DHCPv6-PD"
+```
+
+En la prova real:
+
+- DHCPv6 client: `status=bound`
+- DIGI: prefix delegat `/56`
+- `pool6-DIGI`: `prefix-length=64`
+- IPv6 global creada amb `from-pool=pool6-DIGI`
+- Ping IPv6 a Cloudflare: `0% packet-loss`
+- Ping IPv6 a Google: `0% packet-loss`
+
+Per assignar un `/64` a una LAN:
+
+```routeros
+/ipv6 address
+add address=::1/64 from-pool=pool6-DIGI interface=bridge-LAN advertise=yes comment="IPv6 MGMT"
+```
+
+### Compatibilitat `allow-reconfigure`
+
+La versió del projecte **v1.0.1 no utilitza `allow-reconfigure=yes`**. En el RB750Gr3 provat amb RouterOS 7.20.7 el CLI va rebutjar aquest paràmetre. No és necessari per obtenir el prefix DHCPv6-PD.
+
 ## Fase 2A — L2TP/IPsec
 
 - Xarxa `192.168.140.0/24`

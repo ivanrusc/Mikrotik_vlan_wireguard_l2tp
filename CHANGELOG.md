@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## v1.0.1 — 2026-09-07
+
+### Correcció IPv6
+- Validació real amb DIGI en RB750Gr3 / RouterOS 7.20.7.
+- Eliminat `allow-reconfigure=yes` per compatibilitat amb l'equip provat.
+- Confirmat DHCPv6-PD `status=bound`.
+- Confirmat prefix delegat `/56`.
+- Confirmat `pool6-DIGI` amb `prefix-length=64`.
+- Confirmat ús de `from-pool=pool6-DIGI` per generar /64 LAN/VLAN.
+- Confirmada connectivitat IPv6 contra Cloudflare i Google.
+- Documentació ampliada amb diagnòstic i comprovacions IPv6.
+
 ## v1.0.0 — 2026-09-07
 
 ### Fase 1
